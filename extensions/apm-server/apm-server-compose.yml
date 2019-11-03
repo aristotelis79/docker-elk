@@ -1,4 +1,4 @@
-version: '2'
+version: '3.2'
 
 services:
   apm-server:
@@ -7,7 +7,7 @@ services:
       args:
         ELK_VERSION: $ELK_VERSION
     volumes:
-      - ./apm-server/config/apm-server.yml:/usr/share/apm-server/config/apm-server.yml:ro
+      - ./extensions/apm-server/config/apm-server.yml:/usr/share/apm-server/apm-server.yml:ro
     ports:
       - "8200:8200"
     networks:
