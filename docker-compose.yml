@@ -1,7 +1,8 @@
-version: '3.2'
+version: '3.7'
 
 services:
   elasticsearch:
+    container_name: elasticsearch
     build:
       context: elasticsearch/
       args:
@@ -11,9 +12,10 @@ services:
         source: ./elasticsearch/config/elasticsearch.yml
         target: /usr/share/elasticsearch/config/elasticsearch.yml
         read_only: true
-      - type: volume
-        source: elasticsearch
-        target: /usr/share/elasticsearch/data
+      - ../docker-volumes/var/elk_volume:/usr/share/elasticsearch/data
+      #- type: volume
+      #  source: elasticsearch
+      #  target: /usr/share/elasticsearch/data
     ports:
       - "9200:9200"
       - "9300:9300"
@@ -24,6 +26,7 @@ services:
       - elk
 
   logstash:
+    container_name: logstash
     build:
       context: logstash/
       args:
@@ -48,6 +51,7 @@ services:
       - elasticsearch
 
   kibana:
+    container_name: kibana
     build:
       context: kibana/
       args:
@@ -66,7 +70,9 @@ services:
 
 networks:
   elk:
+    external: true
+    name: elk 
     driver: bridge
 
-volumes:
-  elasticsearch:
+#volumes:
+#  elasticsearch:
