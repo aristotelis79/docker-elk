@@ -1,7 +1,7 @@
 # Elastic stack (ELK) on Docker
 
 [![Join the chat at https://gitter.im/deviantony/docker-elk](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deviantony/docker-elk?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Elastic Stack version](https://img.shields.io/badge/ELK-7.4.1-blue.svg?style=flat)](https://github.com/deviantony/docker-elk/issues/441)
+[![Elastic Stack version](https://img.shields.io/badge/ELK-7.5.0-blue.svg?style=flat)](https://github.com/deviantony/docker-elk/issues/456)
 [![Build Status](https://api.travis-ci.org/deviantony/docker-elk.svg?branch=master)](https://travis-ci.org/deviantony/docker-elk)
 
 Run the latest version of the [Elastic stack][elk-stack] with Docker and Docker Compose.
@@ -99,7 +99,7 @@ exclusively. Make sure the repository is cloned in one of those locations or fol
 
 ### Bringing up the stack
 
-Clone this repository, then start the stack using Docker Compose:
+Clone this repository onto the Docker host that will run the stack, then start services locally using Docker Compose:
 
 ```console
 $ docker-compose up
@@ -133,21 +133,35 @@ The stack is pre-configured with the following **privileged** bootstrap user:
 * password: *changeme*
 
 Although all stack components work out-of-the-box with this user, we strongly recommend using the unprivileged [built-in
-users][builtin-users] instead for increased security. Passwords for these users must be initialized:
+users][builtin-users] instead for increased security. 
+
+1. Initialize passwords for built-in users
 
 ```console
 $ docker-compose exec -T elasticsearch bin/elasticsearch-setup-passwords auto --batch
 ```
 
-Passwords for all 6 built-in users will be randomly generated. Take note of them and replace the `elastic` username with
-`kibana` and `logstash_system` inside the Kibana and Logstash configuration files respectively. See the
-[Configuration](#configuration) section below.
+Passwords for all 6 built-in users will be randomly generated. Take note of them.
+
+2. Unset the bootstrap password (_optional_)
+
+Remove the `ELASTIC_PASSWORD` environment variable from the `elasticsearch` service inside the Compose file
+(`docker-compose.yml`). It is only used to initialize the keystore during the initial startup of Elasticsearch.
+
+3. Replace usernames and passwords in configuration files
+
+Use the `kibana` user inside the Kibana configuration file (`kibana/config/kibana.yml`) and the `logstash_system` user
+inside the Logstash configuration file (`logstash/config/logstash.yml`) in place of the existing `elastic` user.
+
+Replace the password for the `elastic` user inside the Logstash pipeline file (`logstash/pipeline/logstash.conf`).
 
 > :information_source: Do not use the `logstash_system` user inside the Logstash *pipeline* file, it does not have
 > sufficient permissions to create indices. Follow the instructions at [Configuring Security in Logstash][ls-security]
 > to create a user with suitable roles.
 
-Restart Kibana and Logstash to apply the passwords you just wrote to the configuration files.
+See also the [Configuration](#configuration) section below.
+
+4. Restart Kibana and Logstash to apply changes
 
 ```console
 $ docker-compose restart kibana logstash
@@ -167,8 +181,15 @@ Give Kibana about a minute to initialize, then access the Kibana web UI by hitti
 Now that the stack is running, you can go ahead and inject some log entries. The shipped Logstash configuration allows
 you to send content via TCP:
 
+
 ```console
-$ nc localhost 5000 < /path/to/logfile.log
+# Using BSD netcat (Debian, Ubuntu, MacOS system, ...)
+$ cat /path/to/logfile.log | nc -q0 localhost 5000
+```
+
+```console
+# Using GNU netcat (CentOS, Fedora, MacOS Homebrew, ...)
+$ cat /path/to/logfile.log | nc -c localhost 5000
 ```
 
 You can also load the sample data provided by your Kibana installation.
@@ -192,7 +213,7 @@ Create an index pattern via the Kibana API:
 ```console
 $ curl -XPOST -D- 'http://localhost:5601/api/saved_objects/index-pattern' \
     -H 'Content-Type: application/json' \
-    -H 'kbn-version: 7.4.1' \
+    -H 'kbn-version: 7.5.0' \
     -u elastic:<your generated elastic password> \
     -d '{"attributes":{"title":"logstash-*","timeFieldName":"@timestamp"}}'
 ```
